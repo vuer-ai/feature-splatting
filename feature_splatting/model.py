@@ -33,7 +33,7 @@ from feature_splatting.utils import (
     gaussian_editor
 )
 try:
-    from gsplat.cuda_legacy._torch_impl import quat_to_rotmat
+    from gsplat.cuda._torch_impl import _quat_to_rotmat
     from gsplat.rendering import rasterization
 except ImportError:
     print("Please install gsplat>=1.0.0")
@@ -310,7 +310,7 @@ class FeatureSplattingModel(SplatfactoModel):
             fused_render_properties = torch.cat((colors_crop, distill_features_crop), dim=1)
             sh_degree_to_use = None
 
-        render, alpha, info = rasterization(
+        render, alpha, self.info = rasterization(
             means=means_crop,
             quats=quats_crop / quats_crop.norm(dim=-1, keepdim=True),
             scales=torch.exp(scales_crop),
@@ -333,10 +333,10 @@ class FeatureSplattingModel(SplatfactoModel):
             # radius_clip=3.0,
         )
 
-        if self.training and info["means2d"].requires_grad:
-            info["means2d"].retain_grad()
-        self.xys = info["means2d"]  # [1, N, 2]
-        self.radii = info["radii"][0]  # [N]
+        if self.training and self.info["means2d"].requires_grad:
+            self.info["means2d"].retain_grad()
+        self.xys = self.info["means2d"]  # [1, N, 2]
+        self.radii = self.info["radii"][0]  # [N]
         alpha = alpha[:, ...]
 
         background = self._get_background_color()
